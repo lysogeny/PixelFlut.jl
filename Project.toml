@@ -2,3 +2,8 @@ name = "PixelFlut"
 uuid = "2536c84a-7512-4383-8548-749698c41840"
 authors = ["Jooa <git@jooa.xyz>"]
 version = "0.1.0"
+
+[deps]
+ArgParse = "c7e460c6-2fb9-53a9-8c5b-16f535851c63"
+MiniFB = "cc649173-1898-4bb8-8a16-ca5f88bd87d9"
+Sockets = "6462fe0b-24de-5631-8697-dd941f90decc"
