@@ -1,7 +1,7 @@
-SERVER_ADDR = Sockets.IPv4(0)
-SERVER_PORT = 1337
+DEFAULT_SERVER_ADDR = Sockets.IPv4(0)
+DEFAULT_SERVER_PORT = 1337
 
-mutable struct Server
+mutable struct Server <: AbstractUI
     size::Tuple{Int, Int}
     buffer::Matrix{UInt32}
     title::String
@@ -15,12 +15,12 @@ mutable struct Server
     end
 end
 
-function Server(size::Tuple{Int, Int}; title="PixelFlut.jl")
-    Server(size, SERVER_ADDR, SERVER_PORT, title)
+function Server(size::Tuple{Int, Int}, host::T_HOST, port::Int; title="PixelFlut.jl Server")
+    Server(size, host, port, title)
 end
 
-function update_fb!(server::Server)
-    MiniFB.mfb_update(server.window, view(server.buffer, :))
+function Server(size::Tuple{Int, Int}; title="PixelFlut.jl Server")
+    Server(size, DEFAULT_SERVER_ADDR, DEFAULT_SERVER_PORT, title)
 end
 
 function handle_pixel(server::Server, line::AbstractString)
@@ -37,14 +37,6 @@ function handle_pixel(server::Server, line::AbstractString)
     @debug "Updated pixel" x y rgb
     # Parrot the message back instead of building a new one
     return line
-end
-
-function update_loop(server::Server)
-    @info "Canvas Updater Started"
-    while true
-        update_fb!(server)
-        sleep(1/60)
-    end
 end
 
 function connection_loop(server::Server, socket::Sockets.TCPSocket)
