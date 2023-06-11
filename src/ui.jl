@@ -12,5 +12,6 @@ function update_loop(ui::AbstractUI)
     end
 end
 
+Base.size(ui::AbstractUI) = size(ui.buffer)
 
 

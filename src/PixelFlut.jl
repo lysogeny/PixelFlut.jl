@@ -10,5 +10,6 @@ include("helpers.jl")
 include("protocol.jl")
 include("ui.jl")
 include("server.jl")
+include("viewer.jl")
 
 end # module PixelFlut
