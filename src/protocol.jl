@@ -43,14 +43,17 @@ function parse_rgb(str_rgb::AbstractString)
 end
 
 function parse_msg_pixel(msg::AbstractString)
-    pattern = r"^PX (\d+) (\d+) ([A-Fa-f0-9]{6,8})$"
+    pattern = r"^PX (\d+) (\d+) ?([A-Fa-f0-9]{6,8})?$"
     msg = match(pattern, msg)
     if isnothing(msg)
         return
     end
     x, y = parse.(Int, (msg.captures[1], msg.captures[2]))
-    rgb = parse_rgb(msg.captures[3])
-    return (x, y, rgb)
+    if !isnothing(msg.captures[3])
+        rgb = parse_rgb(msg.captures[3])
+        return (x, y, rgb)
+    end
+    return (x, y)
 end
 
 

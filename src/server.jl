@@ -27,6 +27,9 @@ function handle_pixel(server::Server, line::AbstractString)
     pixel = parse_msg_pixel(line)
     if isnothing(pixel)
         return "Bad message"
+    elseif length(pixel) == 2
+        (x, y) = pixel
+        return msg_pixel(x, y, string(server.buffer[x, y], base=16, pad=6))
     end
     # We received a valid pixel
     x, y, rgb = pixel
@@ -66,6 +69,6 @@ function run(server::Server)
     @async update_loop(server)
     while true
         socket = Sockets.accept(server.server)
-        Threads.@spawn connection_loop(server, socket)
+        errormonitor(Threads.@spawn connection_loop(server, socket))
     end
 end
