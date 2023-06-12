@@ -1,29 +1,28 @@
-function gather_pixels(img::AbstractMatrix)
-    # GHather non-transparent pixels into pre-built strings that get sent to the server
-end
-
 mutable struct Sender
     sockets::Vector{Sockets.TCPSocket}
     size::Tuple{Int, Int}
-    offset::Vector{Int, Int}
-    img::Matrix{UInt32}
-    pixels::Vector{Tuple{Int, Int}, UInt32}
-    title::String
-    function Sender(socket, size, img, title)
-        offset = [rand(1:size[1]), rand(1:size[2])]
-        pixels = gather_pixels(img)
-        new(socket, size, offset, img, pixels, title)
+    pixels::Vector{String}
+    function Sender(socket, size, img)
+        pixels = format_pixels(img)
+        new(socket, size, pixels)
     end
 end
 
-function Sender(host::T_HOST, port::Int, img::AbstractString; title="PixelFlut.jl sender", n_connections=8)
+function Sender(host::T_HOST, port::Int, img::AbstractArray; n_connections=8)
     sockets = [Sockets.connect(host, port) for _ in 1:n_connections]
     size = query_size(sockets[1])
-    Sender(sockets, size, img, title=title)
+    Sender(sockets, size, img)
 end
 
-function Sender(host::T_HOST, port::Int, img::AbstractString; title="PixelFlut.jl sender", n_connections=8)
-    Sender(host, port, load_img(img), title=title, n_connections=n_connections)
+function Sender(host::T_HOST, port::Int, img::AbstractString;)
+    Sender(host, port, load_img(img), n_connections=Threads.nthreads())
+end
+
+function empty_listener(socket::Sockets.TCPSocket)
+    @debug "Listening on socket"
+    while !eof(socket)
+         readline(socket)
+    end
 end
 
 function run(sender::Sender)
@@ -32,22 +31,22 @@ function run(sender::Sender)
     n_pixels = length(sender.pixels)
     pixels = Random.shuffle(sender.pixels)
     slices = slice_along(n_pixels, n_sockets)
-    #barrier = SyncBarriers.Barrier(n_sockets)
     threads = []
-    for (i, socket) in enumerate(sender.sockets)
+    for i in 1:n_sockets
         thread = Threads.@spawn begin
-            #b = barrier[i]
+            @info "Started worker for socket $i" 
+            socket = sender.sockets[i]
+            @async empty_listener(socket)
             pxs = pixels[slices[i]]
-            while !eof(socket)
-                @debug "Sending pixels in socket $i"
+            while true
                 for px in pxs
                     write(socket, px)
                 end
-                @debug "Thread $i waiting for other tasks"
-                #SyncBarriers.cycle!(b)
+                @debug "Iteration complete on socket $i"
             end
         end
-        push!(thread)
+        errormonitor(thread)
+        push!(threads, thread)
     end
     wait.(threads)
 end

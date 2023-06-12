@@ -5,6 +5,8 @@ import Sockets
 import ArgParse
 import SyncBarriers
 import Random
+import FileIO
+import ImageCore
 
 T_HOST = Union{String,Sockets.IPAddr}
 
