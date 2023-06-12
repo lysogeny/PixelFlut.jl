@@ -59,8 +59,8 @@ mutable struct State
     function State(max_x, max_y) 
         x = rand(1:max_x)
         y = rand(1:max_y)
-        v = 10
-        u = 10
+        v = 5
+        u = 5
         new(x, y, v, u, max_x, max_y)
     end
 end
