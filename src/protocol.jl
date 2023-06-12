@@ -19,6 +19,7 @@ send_size(socket::Sockets.TCPSocket, w::Int, h::Int) = write(socket, msg_size(w,
 msg_pixel(x::Int, y::Int) = "PX $x $y\n"
 msg_pixel(x::Int, y::Int, rgb::AbstractString) = "PX $x $y $rgb\n"
 msg_pixel(x::Int, y::Int, rgb::Vector{UInt8}) = msg_pixel(x, y, reduce(*, string.(rgb, pad=2, base=16)))
+msg_pixel(x::Int, y::Int, rgb::UInt32) = msg_pixel(x, y, string(rgb, pad=6, base=16))
 
 send_pixel(socket::Sockets.TCPSocket, x::Int, y::Int) = write(socket, msg_pixel(x, y))
 send_pixel(socket::Sockets.TCPSocket, x::Int, y::Int, rgb::AbstractString) = write(socket, msg_pixel(x, y, rgb))
