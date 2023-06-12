@@ -19,16 +19,9 @@ function Sender(host::T_HOST, port::Int, img::AbstractString)
     Sender(host, port, load_img(img))
 end
 
-function empty_listener(socket::Sockets.TCPSocket)
-    @debug "Listening on socket"
-    while !eof(socket)
-         readline(socket)
-    end
-end
-
-function socket_worker(socket::Sockets.TCPSocket, pxs::Vector{String})
+function socket_worker(::Sender, socket::Sockets.TCPSocket, pxs::Vector{String})
     @info "Started worker for socket $socket" 
-    @async empty_listener(socket)
+    @async void_listener(socket)
     while isopen(socket)
         for px in pxs
             write(socket, px)
@@ -44,7 +37,7 @@ function run(sender::Sender)
     pixels = Random.shuffle(sender.pixels)
     slices = slice_along(n_pixels, n_sockets)
     threads = map(1:n_sockets) do i 
-        thread = Threads.@spawn socket_worker(sender.sockets[i], pixels[slices[i]])
+        thread = Threads.@spawn socket_worker(sender, sender.sockets[i], pixels[slices[i]])
         @info "Created thread for socket $i"
         errormonitor(thread)
     end
