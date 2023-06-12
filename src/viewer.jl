@@ -17,7 +17,7 @@ end
 function Viewer(host, port; title="PixelFlut.jl Viewer")
     connection = [Sockets.connect(host, port) for _ in 1:8]
     @info "Connected to $host"
-    size = query_size(connection.sockets[1])
+    size = query_size(connection[1])
     @info "$host has size ($(size[1]), $(size[2]))"
     Viewer(connection, size, title)
 end
@@ -47,12 +47,12 @@ function run(viewer::Viewer)
     @info "Starting Viewer"
     @async update_loop(viewer)
     blank(viewer, MiniFB.mfb_rgb(0xff, 0x00, 0x00))
-    n_sockets = length(viewer.connection.sockets)
+    n_sockets = length(viewer.connection)
     n_pixels = length(viewer.pixels)
     pixels = Random.shuffle(viewer.pixels)
     slices = slice_along(n_pixels, n_sockets)
     threads = map(1:n_sockets) do i
-        socket = viewer.connection.sockets[i]
+        socket = viewer.connection[i]
         thread = Threads.@spawn socket_worker(viewer, socket, pixels[slices[i]])
         errormonitor(thread)
     end
