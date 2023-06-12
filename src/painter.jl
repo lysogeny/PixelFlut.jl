@@ -8,14 +8,15 @@ mutable struct Sender
     end
 end
 
-function Sender(host::T_HOST, port::Int, img::AbstractArray; n_connections=8)
+function Sender(host::T_HOST, port::Int, img::AbstractArray)
+    n_connections = Threads.nthreads()
     sockets = [Sockets.connect(host, port) for _ in 1:n_connections]
     size = query_size(sockets[1])
     Sender(sockets, size, img)
 end
 
-function Sender(host::T_HOST, port::Int, img::AbstractString;)
-    Sender(host, port, load_img(img), n_connections=Threads.nthreads())
+function Sender(host::T_HOST, port::Int, img::AbstractString)
+    Sender(host, port, load_img(img))
 end
 
 function empty_listener(socket::Sockets.TCPSocket)
@@ -25,28 +26,27 @@ function empty_listener(socket::Sockets.TCPSocket)
     end
 end
 
+function socket_worker(socket::Sockets.TCPSocket, pxs::Vector{String})
+    @info "Started worker for socket $socket" 
+    @async empty_listener(socket)
+    while isopen(socket)
+        for px in pxs
+            write(socket, px)
+        end
+        @debug "Iteration complete on socket $socket"
+    end
+end
+
 function run(sender::Sender)
     @info "Starting Sender"
     n_sockets = length(sender.sockets)
     n_pixels = length(sender.pixels)
     pixels = Random.shuffle(sender.pixels)
     slices = slice_along(n_pixels, n_sockets)
-    threads = []
-    for i in 1:n_sockets
-        thread = Threads.@spawn begin
-            @info "Started worker for socket $i" 
-            socket = sender.sockets[i]
-            @async empty_listener(socket)
-            pxs = pixels[slices[i]]
-            while true
-                for px in pxs
-                    write(socket, px)
-                end
-                @debug "Iteration complete on socket $i"
-            end
-        end
+    threads = map(1:n_sockets) do i 
+        thread = Threads.@spawn socket_worker(sender.sockets[i], pixels[slices[i]])
+        @info "Created thread for socket $i"
         errormonitor(thread)
-        push!(threads, thread)
     end
     wait.(threads)
 end
